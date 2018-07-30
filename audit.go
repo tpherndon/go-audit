@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"errors"
 	"flag"
 	"fmt"
@@ -33,6 +34,7 @@ func loadConfig(configFile string) (*viper.Viper, error) {
 
 	config.SetDefault("events.min", 1300)
 	config.SetDefault("events.max", 1399)
+	config.SetDefault("input.source", "netlink")
 	config.SetDefault("message_tracking.enabled", true)
 	config.SetDefault("message_tracking.log_out_of_order", false)
 	config.SetDefault("message_tracking.max_out_of_order", 500)
@@ -342,9 +344,23 @@ func main() {
 		el.Fatal(err)
 	}
 
-	nlClient, err := NewNetlinkClient(config.GetInt("socket_buffer.receive"))
-	if err != nil {
-		el.Fatal(err)
+	switch config.GetString("input.source") {
+	case "netlink":
+		client, err := NewNetlinkClient(config.GetInt("socket_buffer.receive"))
+		if err != nil {
+			el.Fatal(err)
+		}
+	case "file":
+		fin, err := os.Open(config.GetString("input.file"))
+		if err != nil {
+			el.Fatal(err)
+		}
+		defer fin.Close()
+		scanner := bufio.NewScanner(file)
+		client, err := NewFileClient(scanner)
+		if err != nil {
+			el.Fatal(err)
+		}
 	}
 
 	marshaller := NewAuditMarshaller(
@@ -361,7 +377,7 @@ func main() {
 
 	//Main loop. Get data from netlink and send it to the json lib for processing
 	for {
-		msg, err := nlClient.Receive()
+		msg, err := client.Receive()
 		if err != nil {
 			el.Printf("Error during message receive: %+v\n", err)
 			continue
