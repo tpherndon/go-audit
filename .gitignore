@@ -5,4 +5,5 @@ go-audit.yaml
 *.test
 *.deb
 *.out
+*.swp
 node_modules
