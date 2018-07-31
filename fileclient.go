@@ -27,7 +27,8 @@ func (f *FileClient) Receive() (*syscall.NetlinkMessage, error) {
 	// construct syscall.NetlinkMessage
 	line := f.s.Bytes()
 	words := bytes.Fields(line)
-	var typ, seq, pid []byte
+	var typ, seq []byte
+	pid := []byte{0, 0, 0, 0}
 	for _, word := range words {
 		kv := bytes.Split(word, []byte("="))
 		key := string(kv[0])
@@ -36,7 +37,7 @@ func (f *FileClient) Receive() (*syscall.NetlinkMessage, error) {
 		case "type":
 			typ = value
 		case "pid":
-			pid = value
+			pid[3] = value[0]
 		case "msg":
 			parts := bytes.Split(value, []byte(":"))
 			seq = bytes.TrimRight(parts[1], ")")
@@ -44,10 +45,13 @@ func (f *FileClient) Receive() (*syscall.NetlinkMessage, error) {
 	}
 
 	msg := &syscall.NetlinkMessage{
+		// The Header is relatively unused in FileClient, so construct
+		// something that fulfills the letter of the law in order to
+		// pass.
 		Header: syscall.NlMsghdr{
 			Len:   Endianness.Uint32(line),
 			Type:  Endianness.Uint16(typ),
-			Flags: Endianness.Uint16([]byte("")),
+			Flags: Endianness.Uint16([]byte{0, 0}),
 			Seq:   Endianness.Uint32(seq),
 			Pid:   Endianness.Uint32(pid),
 		},
