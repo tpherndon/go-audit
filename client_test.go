@@ -10,7 +10,7 @@ import (
 )
 
 func TestNetlinkClient_KeepConnection(t *testing.T) {
-	n := makeNelinkClient(t)
+	n := makeNetlinkClient(t)
 	defer syscall.Close(n.fd)
 
 	n.KeepConnection()
@@ -42,7 +42,7 @@ func TestNetlinkClient_SendReceive(t *testing.T) {
 	var msg *syscall.NetlinkMessage
 
 	// Build our client
-	n := makeNelinkClient(t)
+	n := makeNetlinkClient(t)
 	defer syscall.Close(n.fd)
 
 	// Make sure we can encode/decode properly
@@ -108,7 +108,7 @@ func TestNewNetlinkClient(t *testing.T) {
 }
 
 // Helper to make a client listening on a unix socket
-func makeNelinkClient(t *testing.T) *NetlinkClient {
+func makeNetlinkClient(t *testing.T) *NetlinkClient {
 	os.Remove("go-audit.test.sock")
 	fd, err := syscall.Socket(syscall.AF_UNIX, syscall.SOCK_RAW, 0)
 	if err != nil {
