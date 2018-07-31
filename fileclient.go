@@ -27,7 +27,7 @@ func (f *FileClient) Receive() (*syscall.NetlinkMessage, error) {
 	// construct syscall.NetlinkMessage
 	line := f.s.Bytes()
 	words := bytes.Fields(line)
-	var typ, seq, pid []bytes
+	var typ, seq, pid []byte
 	for _, word := range words {
 		kv := bytes.Split(word, []byte("="))
 		key := string(kv[0])
@@ -45,9 +45,9 @@ func (f *FileClient) Receive() (*syscall.NetlinkMessage, error) {
 
 	msg := &syscall.NetlinkMessage{
 		Header: syscall.NlMsghdr{
-			Len:   Endianness.Uint32(len(f)),
+			Len:   Endianness.Uint32(line),
 			Type:  Endianness.Uint16(typ),
-			Flags: Endianness.Uint16(0),
+			Flags: Endianness.Uint16([]byte("")),
 			Seq:   Endianness.Uint32(seq),
 			Pid:   Endianness.Uint32(pid),
 		},
