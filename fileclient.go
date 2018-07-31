@@ -7,10 +7,10 @@ import (
 )
 
 type FileClient struct {
-	s bufio.Scanner
+	s *bufio.Scanner
 }
 
-func NewFileClient(s bufio.Scanner) (*FileClient, error) {
+func NewFileClient(s *bufio.Scanner) (*FileClient, error) {
 	f := &FileClient{
 		s: s,
 	}
@@ -19,18 +19,18 @@ func NewFileClient(s bufio.Scanner) (*FileClient, error) {
 }
 
 func (f *FileClient) Receive() (*syscall.NetlinkMessage, error) {
-	f.Scan()
-	if err := scanner.Err(); err != nil {
+	f.s.Scan()
+	if err := f.s.Err(); err != nil {
 		return nil, err
 	}
 
 	// construct syscall.NetlinkMessage
-	line := f.Bytes()
+	line := f.s.Bytes()
 	words := bytes.Fields(line)
 	var typ, seq, pid []bytes
 	for _, word := range words {
-		kv := bytes.Split(word, "=")
-		key := kv[0]
+		kv := bytes.Split(word, []byte("="))
+		key := string(kv[0])
 		value := kv[1]
 		switch key {
 		case "type":
@@ -38,7 +38,7 @@ func (f *FileClient) Receive() (*syscall.NetlinkMessage, error) {
 		case "pid":
 			pid = value
 		case "msg":
-			parts = bytes.Split(value, ":")
+			parts := bytes.Split(value, []byte(":"))
 			seq = bytes.TrimRight(parts[1], ")")
 		}
 	}

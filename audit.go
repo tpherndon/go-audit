@@ -344,9 +344,11 @@ func main() {
 		el.Fatal(err)
 	}
 
+	var nlclient *NetlinkClient
+	var fclient *FileClient
 	switch config.GetString("input.source") {
 	case "netlink":
-		client, err := NewNetlinkClient(config.GetInt("socket_buffer.receive"))
+		nlclient, err = NewNetlinkClient(config.GetInt("socket_buffer.receive"))
 		if err != nil {
 			el.Fatal(err)
 		}
@@ -356,8 +358,8 @@ func main() {
 			el.Fatal(err)
 		}
 		defer fin.Close()
-		scanner := bufio.NewScanner(file)
-		client, err := NewFileClient(scanner)
+		scanner := bufio.NewScanner(fin)
+		fclient, err = NewFileClient(scanner)
 		if err != nil {
 			el.Fatal(err)
 		}
@@ -377,7 +379,13 @@ func main() {
 
 	//Main loop. Get data from netlink and send it to the json lib for processing
 	for {
-		msg, err := client.Receive()
+		var msg *syscall.NetlinkMessage
+		switch config.GetString("input.source") {
+		case "netlink":
+			msg, err = nlclient.Receive()
+		case "file":
+			msg, err = fclient.Receive()
+		}
 		if err != nil {
 			el.Printf("Error during message receive: %+v\n", err)
 			continue
